@@ -1,0 +1,92 @@
+@newsletter-api http://localhost:3333
+
+### Health
+GET {{host}}/health
+
+### Register user
+POST {{host}}/users/register
+Content-Type: application/json
+
+{
+  "name": "Miguel",
+  "email": "miguel@example.com",
+  "password": "secret123",
+  "role": "user"
+}
+
+### Login
+# @name login
+POST {{host}}/users/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "admin123"
+}
+
+### Current user (protected)
+GET {{host}}/users/me
+Authorization: Bearer {{login.response.body.token}}
+
+### List users (protected, admin)
+GET {{host}}/users
+Authorization: Bearer {{login.response.body.token}}
+
+### Create newsletter (protected)
+# @name newNews
+POST {{host}}/newsletters
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "locale": "en",
+  "slug": "march-update",
+  "title": "March Update",
+  "description": "Our March newsletter.",
+  "body": { "format": "markdown", "content": "# Hello\nWelcome to March." },
+  "cover_image": "newsletter/2026/march/cover.webp",
+  "publication_status": "published",
+  "published_at": "2026-03-01 10:00:00"
+}
+
+### List newsletters (optional ?locale=en)
+GET {{host}}/newsletters
+
+### Get newsletter by id
+GET {{host}}/newsletters/{{newNews.response.body.id}}
+
+### Get newsletter by slug+locale
+GET {{host}}/newsletters/slug/en/march-update
+
+### Update newsletter
+PUT {{host}}/newsletters/{{newNews.response.body.id}}
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "publication_status": "archived"
+}
+
+### Create form submission (public)
+# @name newForm
+POST {{host}}/forms
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+351912345678",
+  "message": "I would like to subscribe."
+}
+
+### List form submissions (protected)
+GET {{host}}/forms
+Authorization: Bearer {{login.response.body.token}}
+
+### Delete form
+DELETE {{host}}/forms/{{newForm.response.body.id}}
+Authorization: Bearer {{login.response.body.token}}
+
+### Delete newsletter
+DELETE {{host}}/newsletters/{{newNews.response.body.id}}
+Authorization: Bearer {{login.response.body.token}}
