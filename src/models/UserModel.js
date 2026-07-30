@@ -4,14 +4,33 @@ const bcrypt = require('bcrypt');
 const SALT_ROUNDS = 12;
 
 async function create(data) {
-  const { id, role = 'editor', name, email, password, profile_image, created_by } = data;
+  const {
+    id,
+    role = 'editor',
+    name,
+    email,
+    password,
+    profile_image,
+    created_by,
+    requires_password_change = false,
+  } = data;
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
   const profileImage = profile_image || null;
   await connection.execute(
     `INSERT INTO User
-      (id, role, status, name, email, password_hash, profile_image, created_by, created_at, updated_at)
-     VALUES (?, ?, 'active', ?, ?, ?, ?, ?, NOW(), NOW())`,
-    [id, role, name, email.toLowerCase(), passwordHash, profileImage, created_by || null],
+      (id, role, status, name, email, password_hash, profile_image, created_by,
+       requires_password_change, created_at, updated_at)
+     VALUES (?, ?, 'active', ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+    [
+      id,
+      role,
+      name,
+      email.toLowerCase(),
+      passwordHash,
+      profileImage,
+      created_by || null,
+      requires_password_change ? 1 : 0,
+    ],
   );
   return findById(id);
 }
@@ -25,7 +44,8 @@ async function findByEmail(email) {
 
 async function findById(id) {
   const [rows] = await connection.execute(
-    `SELECT id, role, status, name, email, profile_image, last_login_at, created_at, updated_at
+    `SELECT id, role, status, name, email, profile_image, last_login_at,
+            requires_password_change, password_changed_at, created_at, updated_at
        FROM User WHERE id = ? LIMIT 1`,
     [id],
   );
@@ -34,7 +54,8 @@ async function findById(id) {
 
 async function findAll() {
   const [rows] = await connection.execute(
-    `SELECT id, role, status, name, email, profile_image, last_login_at, created_at, updated_at
+    `SELECT id, role, status, name, email, profile_image, last_login_at,
+            requires_password_change, password_changed_at, created_at, updated_at
        FROM User ORDER BY created_at DESC`,
   );
   return rows;
@@ -64,11 +85,16 @@ async function update(id, patch) {
   return findById(id);
 }
 
-async function updatePassword(id, password) {
+async function updatePassword(id, password, clearRequiredChange = false) {
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
   await connection.execute(
-    'UPDATE User SET password_hash = ?, updated_at = NOW() WHERE id = ?',
-    [passwordHash, id],
+    `UPDATE User
+        SET password_hash = ?,
+            requires_password_change = IF(?, 0, requires_password_change),
+            password_changed_at = IF(?, NOW(), password_changed_at),
+            updated_at = NOW()
+      WHERE id = ?`,
+    [passwordHash, clearRequiredChange ? 1 : 0, clearRequiredChange ? 1 : 0, id],
   );
 }
 

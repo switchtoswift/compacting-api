@@ -42,7 +42,8 @@ async function issueSession(user) {
 async function rotateRefreshToken(token) {
   const tokenHash = hashToken(token || '');
   const [rows] = await connection.execute(
-    `SELECT rt.id AS refresh_id, u.id, u.name, u.email, u.role, u.status
+    `SELECT rt.id AS refresh_id, u.id, u.name, u.email, u.role, u.status,
+            u.requires_password_change
        FROM RefreshToken rt
        JOIN User u ON u.id = rt.user_id
       WHERE rt.token_hash = ?
@@ -67,6 +68,13 @@ async function revokeRefreshToken(token) {
   );
 }
 
+async function revokeAllRefreshTokens(userId) {
+  await connection.execute(
+    'UPDATE RefreshToken SET revoked_at = NOW() WHERE user_id = ? AND revoked_at IS NULL',
+    [userId],
+  );
+}
+
 async function authenticateToken(request, response, next) {
   try {
     const authHeader = request.headers.authorization;
@@ -75,7 +83,8 @@ async function authenticateToken(request, response, next) {
 
     const payload = jwt.verify(token, accessSecret());
     const [rows] = await connection.execute(
-      'SELECT id, name, email, role, status FROM User WHERE id = ? LIMIT 1',
+      `SELECT id, name, email, role, status, requires_password_change
+         FROM User WHERE id = ? LIMIT 1`,
       [payload.id],
     );
     const user = rows[0];
@@ -87,6 +96,16 @@ async function authenticateToken(request, response, next) {
   } catch {
     return response.status(403).json({ error: 'Invalid or expired token' });
   }
+}
+
+function requirePasswordConfigured(request, response, next) {
+  if (request.user?.requires_password_change) {
+    return response.status(428).json({
+      error: 'É obrigatório definir uma nova palavra-passe antes de continuar.',
+      code: 'PASSWORD_CHANGE_REQUIRED',
+    });
+  }
+  return next();
 }
 
 function requireRoles(...roles) {
@@ -102,7 +121,9 @@ module.exports = {
   authenticateToken,
   hashToken,
   issueSession,
+  requirePasswordConfigured,
   requireRoles,
+  revokeAllRefreshTokens,
   revokeRefreshToken,
   rotateRefreshToken,
 };

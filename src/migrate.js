@@ -1,7 +1,10 @@
 require('dotenv').config();
 const db = require('./models/connection');
 
-const migrations = [require('./migrations/001-admin-cms')];
+const migrations = [
+  require('./migrations/001-admin-cms'),
+  require('./migrations/002-required-password-change'),
+];
 
 async function run() {
   await db.query(`

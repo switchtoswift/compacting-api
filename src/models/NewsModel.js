@@ -20,7 +20,19 @@ function parseArticle(row) {
       body = [];
     }
   }
-  if (!Array.isArray(body)) {
+  const visualBody =
+    body &&
+    typeof body === 'object' &&
+    body.format === 'compacting-visual' &&
+    (
+      (body.version === 2 && Array.isArray(body.content)) ||
+      (
+        body.version === 3 &&
+        Array.isArray(body.pages) &&
+        body.pages.every((page) => page && Array.isArray(page.content))
+      )
+    );
+  if (!Array.isArray(body) && !visualBody) {
     body =
       body && typeof body.content === 'string'
         ? [{ type: 'paragraph', content: body.content }]

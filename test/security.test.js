@@ -1,7 +1,10 @@
 const assert = require('node:assert/strict');
 const { after, before, test } = require('node:test');
 const app = require('../src/app');
-const { requireRoles } = require('../src/models/Auth');
+const {
+  requirePasswordConfigured,
+  requireRoles,
+} = require('../src/models/Auth');
 
 let server;
 let baseUrl;
@@ -86,5 +89,37 @@ test('role middleware implements the permission matrix', () => {
       () => { result = 'next'; },
     );
     assert.equal(result, expected);
+  }
+});
+
+test('temporary-password accounts cannot use administrative endpoints', () => {
+  const middleware = requirePasswordConfigured;
+
+  for (const [requiresPasswordChange, expected] of [
+    [false, 'next'],
+    [true, 428],
+  ]) {
+    let result;
+    let payload;
+    middleware(
+      { user: { requires_password_change: requiresPasswordChange } },
+      {
+        status(code) {
+          result = code;
+          return this;
+        },
+        json(value) {
+          payload = value;
+          return this;
+        },
+      },
+      () => {
+        result = 'next';
+      },
+    );
+    assert.equal(result, expected);
+    if (expected === 428) {
+      assert.equal(payload.code, 'PASSWORD_CHANGE_REQUIRED');
+    }
   }
 });

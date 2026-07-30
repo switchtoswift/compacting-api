@@ -1,5 +1,9 @@
 const express = require('express');
-const { authenticateToken, requireRoles } = require('./models/Auth');
+const {
+  authenticateToken,
+  requirePasswordConfigured,
+  requireRoles,
+} = require('./models/Auth');
 const NewsController = require('./controllers/NewsController');
 const NewsletterCmsController = require('./controllers/NewsletterCmsController');
 const UserController = require('./controllers/UserController');
@@ -8,8 +12,16 @@ const StorageController = require('./controllers/StorageController');
 const multer = require('multer');
 
 const router = express.Router();
-const admins = [authenticateToken, requireRoles('owner', 'admin')];
-const editors = [authenticateToken, requireRoles('owner', 'admin', 'editor')];
+const admins = [
+  authenticateToken,
+  requirePasswordConfigured,
+  requireRoles('owner', 'admin'),
+];
+const editors = [
+  authenticateToken,
+  requirePasswordConfigured,
+  requireRoles('owner', 'admin', 'editor'),
+];
 const imageUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024, files: 1 },
@@ -27,6 +39,7 @@ router.post('/auth/login', UserController.login);
 router.post('/auth/refresh', UserController.refresh);
 router.post('/auth/logout', UserController.logout);
 router.get('/auth/me', authenticateToken, UserController.me);
+router.post('/auth/first-access', authenticateToken, UserController.firstAccess);
 router.post('/auth/invitations/accept', UserController.acceptInvitation);
 
 router.get('/news', NewsController.publicList);

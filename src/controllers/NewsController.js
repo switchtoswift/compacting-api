@@ -19,7 +19,31 @@ function validate(data, partial = false) {
   if (data.publication_status !== undefined && !STATUSES.has(data.publication_status)) {
     errors.push('publication_status is invalid');
   }
-  if (data.body !== undefined && !Array.isArray(data.body)) errors.push('body must be an array');
+  if (data.body !== undefined) {
+    const visualBody =
+      data.body &&
+      typeof data.body === 'object' &&
+      data.body.format === 'compacting-visual' &&
+      (
+        (data.body.version === 2 && Array.isArray(data.body.content)) ||
+        (
+          data.body.version === 3 &&
+          Array.isArray(data.body.pages) &&
+          data.body.pages.length > 0 &&
+          data.body.pages.every(
+            (page) =>
+              page &&
+              typeof page === 'object' &&
+              typeof page.id === 'string' &&
+              typeof page.title === 'string' &&
+              Array.isArray(page.content),
+          )
+        )
+      );
+    if (!Array.isArray(data.body) && !visualBody) {
+      errors.push('body must be an array or a valid visual document');
+    }
+  }
   return errors;
 }
 
