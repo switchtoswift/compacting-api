@@ -9,8 +9,7 @@ process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
 });
 
-const fs = require('fs');
-app.listen(3333, () => {
-  console.log('Server Runing');
-  try { fs.writeFileSync('/tmp/api-ready', `${process.pid}`); } catch (e) { console.error('ready-file write failed:', e.message); }
+const port = Number(process.env.PORT || 3333);
+app.listen(port, () => {
+  console.log(`Compacting API listening on port ${port}`);
 });

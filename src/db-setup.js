@@ -1,6 +1,5 @@
 require('dotenv').config();
 const connection = require('./models/connection');
-const bcrypt = require('bcrypt');
 
 const TABLES = [
   `CREATE TABLE IF NOT EXISTS Newsletter (
@@ -39,23 +38,6 @@ const TABLES = [
   )`,
 ];
 
-const seedAdmin = async () => {
-  const existing = await connection.execute('SELECT id FROM User WHERE email = ?', ['admin@example.com']);
-  if (existing[0].length > 0) {
-    console.log('Admin user already exists, skipping seed.');
-    return;
-  }
-  const { randomUUID } = require('crypto');
-  const id = randomUUID();
-  const password_hash = await bcrypt.hash('admin123', 10);
-  await connection.execute(
-    `INSERT INTO User (id, role, name, email, password_hash, created_at, updated_at)
-     VALUES (?, 'admin', 'Admin', ?, ?, NOW(), NOW())`,
-    [id, 'admin@example.com', password_hash]
-  );
-  console.log('Seeded admin user: admin@example.com / admin123');
-};
-
 (async () => {
   try {
     console.log('Applying schema to database...');
@@ -63,8 +45,7 @@ const seedAdmin = async () => {
       await connection.query(sql);
     }
     console.log('Tables ensured: Newsletter, User, Form');
-    await seedAdmin();
-    console.log('DB setup complete.');
+    console.log('Base schema complete. Run `npm run migrate` to apply the admin CMS schema.');
     process.exit(0);
   } catch (err) {
     console.error('DB setup failed:', err.message);

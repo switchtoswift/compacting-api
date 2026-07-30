@@ -1,35 +1,61 @@
 const express = require('express');
-const { authenticateToken } = require('./models/Auth');
-
-const NewsletterController = require('./controllers/NewsletterController');
+const { authenticateToken, requireRoles } = require('./models/Auth');
+const NewsController = require('./controllers/NewsController');
+const NewsletterCmsController = require('./controllers/NewsletterCmsController');
 const UserController = require('./controllers/UserController');
 const FormController = require('./controllers/FormController');
 
-require('dotenv').config();
-
 const router = express.Router();
+const admins = [authenticateToken, requireRoles('owner', 'admin')];
+const editors = [authenticateToken, requireRoles('owner', 'admin', 'editor')];
 
-// Health
-router.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
+router.get('/health', (_request, response) =>
+  response.status(200).json({ status: 'ok', service: 'compacting-api' }),
+);
 
-// ----- User / Auth -----
-router.post('/users/register', UserController.register);
-router.post('/users/login', UserController.login);
-router.get('/users/me', authenticateToken, UserController.me);
-router.get('/users', authenticateToken, UserController.findAll);
+// Account creation is invitation-only.
+router.post('/auth/login', UserController.login);
+router.post('/auth/refresh', UserController.refresh);
+router.post('/auth/logout', UserController.logout);
+router.get('/auth/me', authenticateToken, UserController.me);
+router.post('/auth/invitations/accept', UserController.acceptInvitation);
 
-// ----- Newsletter (all protected except list/get by slug) -----
-router.get('/newsletters', NewsletterController.findAll);
-router.get('/newsletters/slug/:locale/:slug', NewsletterController.findBySlug);
-router.get('/newsletters/:id', NewsletterController.findById);
-router.post('/newsletters', authenticateToken, NewsletterController.create);
-router.put('/newsletters/:id', authenticateToken, NewsletterController.update);
-router.delete('/newsletters/:id', authenticateToken, NewsletterController.remove);
+router.get('/news', NewsController.publicList);
+router.get('/news/:locale/:slug', NewsController.publicBySlug);
+router.post('/newsletter/subscribe', NewsletterCmsController.subscribe);
+router.get('/newsletter/confirm', NewsletterCmsController.confirm);
+router.get('/newsletter/unsubscribe', NewsletterCmsController.unsubscribe);
 
-// ----- Form (public create, protected list/delete) -----
+// Temporary read-only aliases for integrations using the previous article name.
+router.get('/newsletters', NewsController.publicList);
+router.get('/newsletters/slug/:locale/:slug', NewsController.publicBySlug);
+router.get('/newsletters/:id', NewsController.publicById);
+
+router.get('/admin/dashboard', ...editors, NewsletterCmsController.dashboard);
+router.get('/admin/users', ...admins, UserController.findAll);
+router.post('/admin/invitations', ...admins, UserController.invite);
+router.patch('/admin/users/:id', ...admins, UserController.update);
+router.delete('/admin/users/:id', ...admins, UserController.remove);
+
+router.get('/admin/news', ...editors, NewsController.findAll);
+router.get('/admin/news/:id', ...editors, NewsController.findById);
+router.post('/admin/news', ...editors, NewsController.create);
+router.put('/admin/news/:id', ...editors, NewsController.update);
+router.patch('/admin/news/:id', ...editors, NewsController.update);
+router.delete('/admin/news/:id', ...editors, NewsController.remove);
+
+router.get('/admin/newsletter/subscribers', ...editors, NewsletterCmsController.subscribers);
+router.get('/admin/newsletter/status', ...editors, NewsletterCmsController.status);
+router.get('/admin/newsletter/campaigns', ...editors, NewsletterCmsController.campaigns);
+router.get('/admin/newsletter/campaigns/:id', ...editors, NewsletterCmsController.campaign);
+router.post('/admin/newsletter/campaigns', ...editors, NewsletterCmsController.createCampaign);
+router.put('/admin/newsletter/campaigns/:id', ...editors, NewsletterCmsController.updateCampaign);
+router.delete('/admin/newsletter/campaigns/:id', ...editors, NewsletterCmsController.removeCampaign);
+router.post('/admin/newsletter/campaigns/:id/send', ...editors, NewsletterCmsController.sendCampaign);
+
 router.post('/forms', FormController.create);
-router.get('/forms', authenticateToken, FormController.findAll);
-router.get('/forms/:id', authenticateToken, FormController.findById);
-router.delete('/forms/:id', authenticateToken, FormController.remove);
+router.get('/forms', ...admins, FormController.findAll);
+router.get('/forms/:id', ...admins, FormController.findById);
+router.delete('/forms/:id', ...admins, FormController.remove);
 
 module.exports = router;
