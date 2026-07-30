@@ -4,10 +4,19 @@ const NewsController = require('./controllers/NewsController');
 const NewsletterCmsController = require('./controllers/NewsletterCmsController');
 const UserController = require('./controllers/UserController');
 const FormController = require('./controllers/FormController');
+const StorageController = require('./controllers/StorageController');
+const multer = require('multer');
 
 const router = express.Router();
 const admins = [authenticateToken, requireRoles('owner', 'admin')];
 const editors = [authenticateToken, requireRoles('owner', 'admin', 'editor')];
+const imageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024, files: 1 },
+  fileFilter(_request, file, callback) {
+    callback(null, file.mimetype.startsWith('image/'));
+  },
+});
 
 router.get('/health', (_request, response) =>
   response.status(200).json({ status: 'ok', service: 'compacting-api' }),
@@ -22,6 +31,7 @@ router.post('/auth/invitations/accept', UserController.acceptInvitation);
 
 router.get('/news', NewsController.publicList);
 router.get('/news/:locale/:slug', NewsController.publicBySlug);
+router.get('/media/*', StorageController.serve);
 router.post('/newsletter/subscribe', NewsletterCmsController.subscribe);
 router.get('/newsletter/confirm', NewsletterCmsController.confirm);
 router.get('/newsletter/unsubscribe', NewsletterCmsController.unsubscribe);
@@ -43,6 +53,7 @@ router.post('/admin/news', ...editors, NewsController.create);
 router.put('/admin/news/:id', ...editors, NewsController.update);
 router.patch('/admin/news/:id', ...editors, NewsController.update);
 router.delete('/admin/news/:id', ...editors, NewsController.remove);
+router.post('/admin/upload', ...editors, imageUpload.single('file'), StorageController.upload);
 
 router.get('/admin/newsletter/subscribers', ...editors, NewsletterCmsController.subscribers);
 router.get('/admin/newsletter/status', ...editors, NewsletterCmsController.status);

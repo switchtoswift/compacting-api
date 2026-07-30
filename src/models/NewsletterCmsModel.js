@@ -1,5 +1,15 @@
 const connection = require('./connection');
 
+function toDatabaseDate(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (value instanceof Date) return value;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error('Invalid date value');
+  }
+  return date;
+}
+
 function parseCampaign(row) {
   if (!row) return row;
   let articles = row.articles;
@@ -145,7 +155,7 @@ async function createCampaign(data) {
         data.introduction || null,
         data.locale,
         data.status || 'draft',
-        data.scheduled_at || null,
+        toDatabaseDate(data.scheduled_at),
         data.created_by,
       ],
     );
@@ -235,7 +245,7 @@ async function updateCampaign(id, data) {
     for (const [key, column] of Object.entries(map)) {
       if (data[key] !== undefined) {
         fields.push(`${column} = ?`);
-        values.push(data[key]);
+        values.push(key === 'scheduled_at' ? toDatabaseDate(data[key]) : data[key]);
       }
     }
     if (fields.length) {

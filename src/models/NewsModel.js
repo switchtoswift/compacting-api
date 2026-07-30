@@ -1,5 +1,15 @@
 const connection = require('./connection');
 
+function toDatabaseDate(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (value instanceof Date) return value;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error('Invalid date value');
+  }
+  return date;
+}
+
 function parseArticle(row) {
   if (!row) return row;
   let body = row.body;
@@ -109,7 +119,9 @@ async function create(data) {
       data.seo_title || null,
       data.seo_description || null,
       data.publication_status || 'draft',
-      data.publication_status === 'published' ? data.published_at || new Date() : data.published_at || null,
+      data.publication_status === 'published'
+        ? toDatabaseDate(data.published_at) || new Date()
+        : toDatabaseDate(data.published_at),
       data.author_id,
     ],
   );
@@ -137,7 +149,13 @@ async function update(id, data) {
   for (const [key, column] of Object.entries(map)) {
     if (data[key] !== undefined) {
       fields.push(`${column} = ?`);
-      values.push(key === 'body' ? JSON.stringify(data[key]) : data[key]);
+      values.push(
+        key === 'body'
+          ? JSON.stringify(data[key])
+          : key === 'published_at'
+            ? toDatabaseDate(data[key])
+            : data[key],
+      );
     }
   }
   if (
