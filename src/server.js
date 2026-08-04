@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: ['.env.local', '.env'] });
 const app = require('./app');
 
 // Never let an async error kill the whole API.

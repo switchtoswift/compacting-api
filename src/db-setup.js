@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: ['.env.local', '.env'] });
 const connection = require('./models/connection');
 
 const TABLES = [

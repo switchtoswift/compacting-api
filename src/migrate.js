@@ -1,9 +1,10 @@
-require('dotenv').config();
+require('dotenv').config({ path: ['.env.local', '.env'] });
 const db = require('./models/connection');
 
 const migrations = [
   require('./migrations/001-admin-cms'),
   require('./migrations/002-required-password-change'),
+  require('./migrations/003-bootstrap-owner'),
 ];
 
 async function run() {

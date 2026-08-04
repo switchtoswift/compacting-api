@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const connection = require('./connection');
-require('dotenv').config();
+require('dotenv').config({ path: ['.env.local', '.env'] });
 
 const ACCESS_TTL = '15m';
 const REFRESH_DAYS = 30;

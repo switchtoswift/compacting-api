@@ -1,5 +1,5 @@
 const connection = require('./connection');
-require('dotenv').config();
+require('dotenv').config({ path: ['.env.local', '.env'] });
 
 const create = async (data) => {
   const {
