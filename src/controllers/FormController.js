@@ -95,18 +95,21 @@ const create = async (request, response) => {
     let teamNotified = false;
 
     if (mailer.isConfigured()) {
-      try {
-        await sendVisitorConfirmation(submission);
+      const [visitorResult, teamResult] = await Promise.allSettled([
+        sendVisitorConfirmation(submission),
+        sendTeamNotification(submission),
+      ]);
+
+      if (visitorResult.status === 'fulfilled') {
         emailSent = true;
-      } catch (error) {
-        console.error('Contact confirmation email failed:', error.message);
+      } else {
+        console.error('Contact confirmation email failed:', visitorResult.reason?.message);
       }
 
-      try {
-        await sendTeamNotification(submission);
+      if (teamResult.status === 'fulfilled') {
         teamNotified = true;
-      } catch (error) {
-        console.error('Contact team notification failed:', error.message);
+      } else {
+        console.error('Contact team notification failed:', teamResult.reason?.message);
       }
     }
 

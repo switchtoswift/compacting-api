@@ -42,6 +42,7 @@ run()
   .then(async () => {
     await db.end();
     console.log('Migrations complete.');
+    process.exit(0);
   })
   .catch(async (error) => {
     console.error('Migration failed:', error.message);

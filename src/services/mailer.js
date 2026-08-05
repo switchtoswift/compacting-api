@@ -32,6 +32,9 @@ function getTransporter() {
       transporter = nodemailer.createTransport({
         service: String(process.env.SMTP_SERVICE).trim(),
         auth,
+        connectionTimeout: 10_000,
+        greetingTimeout: 10_000,
+        socketTimeout: 15_000,
       });
     } else {
       transporter = nodemailer.createTransport({
@@ -39,6 +42,9 @@ function getTransporter() {
         port: Number(process.env.SMTP_PORT || 587),
         secure: String(process.env.SMTP_SECURE).toLowerCase() === 'true',
         auth,
+        connectionTimeout: 10_000,
+        greetingTimeout: 10_000,
+        socketTimeout: 15_000,
       });
     }
   }
@@ -76,14 +82,21 @@ async function verifyConnection() {
   }
 }
 
+const SEND_TIMEOUT_MS = 15_000;
+
 async function sendMail(message) {
   const client = getTransporter();
   if (!client) return { configured: false, messageId: null };
 
-  const result = await client.sendMail({
+  const sendPromise = client.sendMail({
     from: fromAddress(),
     ...message,
   });
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error(`SMTP send timed out after ${SEND_TIMEOUT_MS / 1000}s`)), SEND_TIMEOUT_MS);
+  });
+
+  const result = await Promise.race([sendPromise, timeoutPromise]);
   return { configured: true, messageId: result.messageId };
 }
 
