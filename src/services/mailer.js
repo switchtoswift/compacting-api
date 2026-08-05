@@ -2,11 +2,21 @@ const nodemailer = require('nodemailer');
 require('dotenv').config({ path: ['.env.local', '.env'] });
 
 function fromAddress() {
-  return String(process.env.EMAIL_FROM || process.env.SMTP_FROM || '').trim();
+  const explicit = String(process.env.EMAIL_FROM || process.env.SMTP_FROM || '').trim();
+  if (explicit) return explicit;
+
+  const user = String(process.env.SMTP_USER || '').trim();
+  if (user) return `Compacting <${user}>`;
+
+  return '';
+}
+
+function smtpPassword() {
+  return String(process.env.SMTP_PASSWORD || '').replace(/\s/g, '');
 }
 
 function hasAuth() {
-  return Boolean(process.env.SMTP_USER && process.env.SMTP_PASSWORD);
+  return Boolean(process.env.SMTP_USER && smtpPassword());
 }
 
 function usesServicePreset() {
@@ -26,7 +36,7 @@ function getTransporter() {
   if (!transporter) {
     const auth = {
       user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASSWORD,
+      pass: smtpPassword(),
     };
     if (usesServicePreset()) {
       transporter = nodemailer.createTransport({
