@@ -109,6 +109,12 @@ async function countOwners() {
   return Number(rows[0].total);
 }
 
+async function remove(id) {
+  await connection.execute('DELETE FROM UserInvitation WHERE invited_by = ?', [id]);
+  const [result] = await connection.execute('DELETE FROM User WHERE id = ?', [id]);
+  return result.affectedRows > 0;
+}
+
 function verifyPassword(plain, hash) {
   return bcrypt.compare(plain, hash);
 }
@@ -120,6 +126,7 @@ module.exports = {
   findByEmail,
   findById,
   markLogin,
+  remove,
   update,
   updatePassword,
   verifyPassword,

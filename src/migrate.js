@@ -5,6 +5,7 @@ const migrations = [
   require('./migrations/001-admin-cms'),
   require('./migrations/002-required-password-change'),
   require('./migrations/003-bootstrap-owner'),
+  require('./migrations/004-contact-form-fields'),
 ];
 
 async function run() {

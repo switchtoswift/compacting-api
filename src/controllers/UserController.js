@@ -319,8 +319,34 @@ async function update(request, response) {
 }
 
 async function remove(request, response) {
-  request.body.status = 'disabled';
-  return update(request, response);
+  try {
+    const target = await model.findById(request.params.id);
+    if (!target) {
+      return response.status(404).json({ error: 'Utilizador não encontrado.' });
+    }
+    if (target.role === 'owner' && request.user.role !== 'owner') {
+      return response.status(403).json({
+        error: 'Apenas o owner pode eliminar outro owner.',
+      });
+    }
+    if (target.id === request.user.id) {
+      return response.status(409).json({
+        error: 'Não pode eliminar a própria conta.',
+      });
+    }
+    if (target.role === 'owner' && (await model.countOwners()) <= 1) {
+      return response.status(409).json({
+        error: 'O sistema deve manter pelo menos um owner ativo.',
+      });
+    }
+    await auth.revokeAllRefreshTokens(target.id);
+    if (!(await model.remove(target.id))) {
+      return response.status(404).json({ error: 'Utilizador não encontrado.' });
+    }
+    return response.status(204).end();
+  } catch (error) {
+    return response.status(500).json({ error: error.message });
+  }
 }
 
 module.exports = {

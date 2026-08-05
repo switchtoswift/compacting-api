@@ -75,23 +75,38 @@ async function call(method, path, { body, token } = {}) {
       chk('newsletter update', r.status, 200);
 
       // form create (optional phone omitted)
-      r = await call('POST', '/forms', { body: { name: 'Jane', email: 'jane@example.com', message: 'hi' } });
+      r = await call('POST', '/forms', {
+        body: {
+          name: 'Jane',
+          email: 'jane@example.com',
+          subject: 'Teste',
+          message: 'hi',
+        },
+      });
       chk('form create', r.status, 201);
       const fmId = r.data && r.data.id;
 
       // form create with phone
-      r = await call('POST', '/forms', { body: { name: 'Joe', email: 'joe@example.com', phone: '+351900000000', message: 'hi2' } });
+      r = await call('POST', '/forms', {
+        body: {
+          name: 'Joe',
+          email: 'joe@example.com',
+          phone: '+351900000000',
+          subject: 'Teste 2',
+          message: 'hi2',
+        },
+      });
       chk('form create w/ phone', r.status, 201);
       const fmId2 = r.data && r.data.id;
 
       // form list (protected)
-      r = await call('GET', '/forms', { token });
+      r = await call('GET', '/admin/forms', { token });
       chk('form list', r.status, 200);
 
       // cleanup
       await call('DELETE', `/newsletters/${nlId}`, { token });
-      await call('DELETE', `/forms/${fmId}`, { token });
-      await call('DELETE', `/forms/${fmId2}`, { token });
+      await call('DELETE', `/admin/forms/${fmId}`, { token });
+      await call('DELETE', `/admin/forms/${fmId2}`, { token });
       await call('DELETE', `/users/${regId}`, { token });
     } catch (err) {
       results.push(`FAIL exception: ${err.message}`);

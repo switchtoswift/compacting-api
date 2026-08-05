@@ -2,16 +2,27 @@ const connection = require('./connection');
 require('dotenv').config({ path: ['.env.local', '.env'] });
 
 const create = async (data) => {
-  const { id, name, email, phone, message } = data;
-  // MySQL rejects `undefined` bind params — coerce optional fields to NULL.
-  const phoneVal = phone === undefined ? null : phone;
+  const { id, name, email, phone, subject, organization, message } = data;
+  const phoneVal = phone === undefined || phone === null || phone === '' ? null : phone;
+  const organizationVal =
+    organization === undefined || organization === null || organization === ''
+      ? null
+      : organization;
   const sql = `
     INSERT INTO Form
-    (id, name, email, phone, message, created_at)
-    VALUES (?, ?, ?, ?, ?, NOW())
+    (id, name, email, phone, subject, organization, message, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
   `;
-  await connection.execute(sql, [id, name, email, phoneVal, message]);
-  return { id, name, email, phone: phoneVal, message };
+  await connection.execute(sql, [
+    id,
+    name,
+    email,
+    phoneVal,
+    subject,
+    organizationVal,
+    message,
+  ]);
+  return findById(id);
 };
 
 const findAll = async () => {

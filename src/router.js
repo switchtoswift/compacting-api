@@ -78,8 +78,8 @@ router.delete('/admin/newsletter/campaigns/:id', ...editors, NewsletterCmsContro
 router.post('/admin/newsletter/campaigns/:id/send', ...editors, NewsletterCmsController.sendCampaign);
 
 router.post('/forms', FormController.create);
-router.get('/forms', ...admins, FormController.findAll);
-router.get('/forms/:id', ...admins, FormController.findById);
-router.delete('/forms/:id', ...admins, FormController.remove);
+router.get('/admin/forms', ...editors, FormController.findAll);
+router.get('/admin/forms/:id', ...editors, FormController.findById);
+router.delete('/admin/forms/:id', ...editors, FormController.remove);
 
 module.exports = router;

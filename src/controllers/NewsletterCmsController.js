@@ -269,7 +269,10 @@ async function dashboard(_request, response) {
 }
 
 async function status(_request, response) {
-  return response.status(200).json({ smtp_configured: mailer.isConfigured() });
+  return response.status(200).json({
+    smtp_configured: mailer.isConfigured(),
+    from_address: mailer.maskedFromAddress(),
+  });
 }
 
 module.exports = {
