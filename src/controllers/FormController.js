@@ -14,7 +14,9 @@ function escapeHtml(value) {
 }
 
 function notifyEmail() {
-  return String(process.env.CONTACT_NOTIFY_EMAIL || 'geral@compacting.pt').trim();
+  return String(
+    process.env.CONTACT_NOTIFY_EMAIL || process.env.SMTP_USER || 'geral@compacting.pt',
+  ).trim();
 }
 
 async function sendVisitorConfirmation(submission) {
