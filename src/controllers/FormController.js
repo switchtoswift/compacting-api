@@ -66,6 +66,23 @@ async function sendTeamNotification(submission) {
   });
 }
 
+async function deliverContactEmails(submission) {
+  if (!mailer.isConfigured()) return;
+
+  const [visitorResult, teamResult] = await Promise.allSettled([
+    sendVisitorConfirmation(submission),
+    sendTeamNotification(submission),
+  ]);
+
+  if (visitorResult.status === 'rejected') {
+    console.error('Contact confirmation email failed:', visitorResult.reason?.message);
+  }
+
+  if (teamResult.status === 'rejected') {
+    console.error('Contact team notification failed:', teamResult.reason?.message);
+  }
+}
+
 const create = async (request, response) => {
   try {
     const name = String(request.body.name || '').trim();
@@ -91,32 +108,12 @@ const create = async (request, response) => {
       message,
     });
 
-    let emailSent = false;
-    let teamNotified = false;
-
-    if (mailer.isConfigured()) {
-      const [visitorResult, teamResult] = await Promise.allSettled([
-        sendVisitorConfirmation(submission),
-        sendTeamNotification(submission),
-      ]);
-
-      if (visitorResult.status === 'fulfilled') {
-        emailSent = true;
-      } else {
-        console.error('Contact confirmation email failed:', visitorResult.reason?.message);
-      }
-
-      if (teamResult.status === 'fulfilled') {
-        teamNotified = true;
-      } else {
-        console.error('Contact team notification failed:', teamResult.reason?.message);
-      }
-    }
+    void deliverContactEmails(submission);
 
     return response.status(201).json({
       id: submission.id,
-      email_sent: emailSent,
-      team_notified: teamNotified,
+      email_sent: false,
+      team_notified: false,
     });
   } catch (err) {
     return response.status(500).json({ error: err.message });
