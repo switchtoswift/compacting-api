@@ -75,11 +75,21 @@ async function deliverContactEmails(submission) {
   ]);
 
   if (visitorResult.status === 'rejected') {
-    console.error('Contact confirmation email failed:', visitorResult.reason?.message);
+    console.error(
+      'Contact confirmation email failed:',
+      visitorResult.reason?.message || visitorResult.reason,
+    );
+  } else {
+    console.log(`Contact confirmation email sent to ${submission.email}`);
   }
 
   if (teamResult.status === 'rejected') {
-    console.error('Contact team notification failed:', teamResult.reason?.message);
+    console.error(
+      'Contact team notification failed:',
+      teamResult.reason?.message || teamResult.reason,
+    );
+  } else {
+    console.log(`Contact team notification sent to ${notifyEmail()}`);
   }
 }
 

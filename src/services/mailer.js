@@ -42,9 +42,9 @@ function getTransporter() {
       transporter = nodemailer.createTransport({
         service: String(process.env.SMTP_SERVICE).trim(),
         auth,
-        connectionTimeout: 10_000,
-        greetingTimeout: 10_000,
-        socketTimeout: 15_000,
+        connectionTimeout: 20_000,
+        greetingTimeout: 20_000,
+        socketTimeout: 30_000,
       });
     } else {
       transporter = nodemailer.createTransport({
@@ -52,13 +52,25 @@ function getTransporter() {
         port: Number(process.env.SMTP_PORT || 587),
         secure: String(process.env.SMTP_SECURE).toLowerCase() === 'true',
         auth,
-        connectionTimeout: 10_000,
-        greetingTimeout: 10_000,
-        socketTimeout: 15_000,
+        connectionTimeout: 20_000,
+        greetingTimeout: 20_000,
+        socketTimeout: 30_000,
       });
     }
   }
   return transporter;
+}
+
+function maskedEmail(email) {
+  const value = String(email || '').trim();
+  const at = value.indexOf('@');
+  if (at <= 0) return value;
+
+  const local = value.slice(0, at);
+  const domain = value.slice(at + 1);
+  const maskedLocal =
+    local.length <= 2 ? `${local[0] || ''}***` : `${local[0]}***${local.slice(-1)}`;
+  return `${maskedLocal}@${domain}`;
 }
 
 function maskedFromAddress() {
@@ -67,16 +79,9 @@ function maskedFromAddress() {
 
   const match = from.match(/<([^>]+)>/);
   const email = match ? match[1] : from;
-  const at = email.indexOf('@');
-  if (at <= 0) return from;
+  const maskedEmailValue = maskedEmail(email);
 
-  const local = email.slice(0, at);
-  const domain = email.slice(at + 1);
-  const maskedLocal =
-    local.length <= 2 ? `${local[0] || ''}***` : `${local[0]}***${local.slice(-1)}`;
-  const maskedEmail = `${maskedLocal}@${domain}`;
-
-  return match ? from.replace(email, maskedEmail) : maskedEmail;
+  return match ? from.replace(email, maskedEmailValue) : maskedEmailValue;
 }
 
 async function verifyConnection() {
@@ -92,7 +97,7 @@ async function verifyConnection() {
   }
 }
 
-const SEND_TIMEOUT_MS = 15_000;
+const SEND_TIMEOUT_MS = 30_000;
 
 async function sendMail(message) {
   const client = getTransporter();
@@ -113,6 +118,7 @@ async function sendMail(message) {
 module.exports = {
   fromAddress,
   isConfigured,
+  maskedEmail,
   maskedFromAddress,
   sendMail,
   verifyConnection,

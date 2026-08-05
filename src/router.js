@@ -70,6 +70,7 @@ router.post('/admin/upload', ...editors, imageUpload.single('file'), StorageCont
 
 router.get('/admin/newsletter/subscribers', ...editors, NewsletterCmsController.subscribers);
 router.get('/admin/newsletter/status', ...editors, NewsletterCmsController.status);
+router.post('/admin/newsletter/test-smtp', ...editors, NewsletterCmsController.testSmtp);
 router.get('/admin/newsletter/campaigns', ...editors, NewsletterCmsController.campaigns);
 router.get('/admin/newsletter/campaigns/:id', ...editors, NewsletterCmsController.campaign);
 router.post('/admin/newsletter/campaigns', ...editors, NewsletterCmsController.createCampaign);

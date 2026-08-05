@@ -269,10 +269,55 @@ async function dashboard(_request, response) {
 }
 
 async function status(_request, response) {
+  const configured = mailer.isConfigured();
+  const verify = configured
+    ? await mailer.verifyConnection()
+    : { ok: false, error: 'SMTP not configured.' };
+  const notify = String(process.env.CONTACT_NOTIFY_EMAIL || process.env.SMTP_USER || '').trim();
+
   return response.status(200).json({
-    smtp_configured: mailer.isConfigured(),
+    smtp_configured: configured,
+    smtp_verified: verify.ok,
+    smtp_error: verify.ok ? null : verify.error,
     from_address: mailer.maskedFromAddress(),
+    notify_address: notify ? mailer.maskedEmail(notify) : null,
   });
+}
+
+async function testSmtp(_request, response) {
+  if (!mailer.isConfigured()) {
+    return response.status(409).json({ error: 'SMTP não está configurado.' });
+  }
+
+  const verify = await mailer.verifyConnection();
+  if (!verify.ok) {
+    return response.status(502).json({ error: verify.error });
+  }
+
+  const to = String(process.env.CONTACT_NOTIFY_EMAIL || process.env.SMTP_USER || '').trim();
+  if (!to) {
+    return response.status(409).json({ error: 'Defina SMTP_USER ou CONTACT_NOTIFY_EMAIL.' });
+  }
+
+  try {
+    const result = await mailer.sendMail({
+      to,
+      subject: 'Teste SMTP — Compacting',
+      text:
+        'Este é um email de teste enviado a partir do admin Compacting.\n\n' +
+        'Se recebeu esta mensagem, o envio SMTP está a funcionar.',
+      html:
+        '<p>Este é um email de teste enviado a partir do admin <strong>Compacting</strong>.</p>' +
+        '<p>Se recebeu esta mensagem, o envio SMTP está a funcionar.</p>',
+    });
+    return response.status(200).json({
+      ok: true,
+      message_id: result.messageId,
+      to: mailer.maskedEmail(to),
+    });
+  } catch (error) {
+    return response.status(502).json({ error: error.message });
+  }
 }
 
 module.exports = {
@@ -284,6 +329,7 @@ module.exports = {
   removeCampaign,
   sendCampaign,
   status,
+  testSmtp,
   subscribe,
   subscribers,
   unsubscribe,
